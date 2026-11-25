@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chaldea — Inteligência em Denúncias e Correlação de Ameaças Internas</title>
+  <meta name="description" content="A Chaldea conecta canais seguros de denúncias humanas a logs de DLP, SIEM e Firewall para detectar vazamentos internos de dados com conformidade LGPD e auditoria forense.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0A0E14;
+      --bg-elev: #111722;
+      --bg-card: #151D2B;
+      --border: rgba(148, 163, 184, 0.16);
+      --border-strong: rgba(230, 159, 56, 0.42);
+      --primary: #E69F38;
+      --primary-soft: rgba(230, 159, 56, 0.12);
+      --secondary: #2DD4BF;
+      --secondary-soft: rgba(45, 212, 191, 0.12);
+      --danger: #F43F5E;
+      --danger-soft: rgba(244, 63, 94, 0.14);
+      --text: #F1F5F9;
+      --text-muted: #94A3B8;
+      --font-display: 'Syne', sans-serif;
+      --font-body: 'IBM Plex Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius: 12px;
+      --max-w: 1180px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      line-height: 1.65;
+      overflow-x: hidden;
+      background-image:
+        radial-gradient(circle at 12% 8%, rgba(230, 159, 56, 0.08), transparent 36%),
+        radial-gradient(circle at 88% 18%, rgba(45, 212, 191, 0.06), transparent 34%),
+        linear-gradient(rgba(148, 163, 184, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 3px;
+    }
+
+    .container { width: min(var(--max-w), 92%); margin: 0 auto; }
+
+    /* Header */
+    .site-header {
+      position: sticky; top: 0; z-index: 50;
+      backdrop-filter: blur(14px);
+      background: rgba(10, 14, 20, 0.86);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 0; gap: 20px;
+    }
+    .brand {
+      display: inline-flex; align-items: center; gap: 12px;
+      font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; letter-spacing: 0.04em;
+    }
+    .brand-tag {
+      font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600;
+      color: var(--primary); background: var(--primary-soft);
+      border: 1px solid var(--border-strong); padding: 2px 8px; border-radius: 999px;
+      letter-spacing: 0.08em;
+    }
+    .nav-links { display: flex; align-items: center; gap: 24px; font-size: 0.92rem; color: var(--text-muted); }
+    .nav-links a { transition: color 0.2s ease; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 0.88rem;
+      background: var(--primary); color: #0A0E14; transition: transform 0.2s ease, filter 0.2s ease;
+    }
+    .nav-cta:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+    .menu-btn {
+      display: none; background: transparent; border: 1px solid var(--border);
+      color: var(--text); border-radius: 8px; padding: 8px 10px; cursor: pointer;
+    }
+
+    /* Hero */
+    .hero { padding: 72px 0 84px; position: relative; }
+    .hero-grid {
+      display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 44px; align-items: center;
+    }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-family: var(--font-mono); font-size: 0.78rem; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--secondary);
+      background: var(--secondary-soft); border: 1px solid rgba(45, 212, 191, 0.28);
+      padding: 6px 12px; border-radius: 999px; margin-bottom: 20px;
+    }
+    .pulse-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--secondary);
+      box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.7);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(45, 212, 191, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(45, 212, 191, 0); }
+    }
+    h1 {
+      font-family: var(--font-display); font-size: clamp(2.2rem, 4.3vw, 3.55rem);
+      line-height: 1.08; margin: 0 0 20px; letter-spacing: -0.02em;
+    }
+    h1 span { color: var(--primary); }
+    .hero-lead { color: var(--text-muted); font-size: 1.08rem; max-width: 56ch; margin: 0 0 28px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 13px 22px;
+      border-radius: 9px; font-weight: 600; font-size: 0.95rem; cursor: pointer;
+      border: 1px solid transparent; transition: all 0.2s ease;
+    }
+    .btn-primary { background: var(--primary); color: #0A0E14; }
+    .btn-primary:hover { filter: brightness(1.08); transform: translateY(-2px); }
+    .btn-ghost { background: transparent; border-color: var(--border); color: var(--text); }
+    .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* Elemento-Assinatura: Console de Correlação Interativo */
+    .correlator-shell {
+      background: linear-gradient(160deg, #131B28 0%, #0D121B 100%);
+      border: 1px solid var(--border-strong);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+    .correlator-top {
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;
+      font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-muted);
+    }
+    .case-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+    .case-tab {
+      font-family: var(--font-mono); font-size: 0.74rem; padding: 6px 10px;
+      border-radius: 6px; border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.02); color: var(--text-muted); cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .case-tab.active, .case-tab:hover {
+      border-color: var(--primary); color: var(--primary); background: var(--primary-soft);
+    }
+    .signal-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .signal-card {
+      background: rgba(10, 14, 20, 0.75); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px;
+    }
+    .signal-label {
+      font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase;
+      letter-spacing: 0.08em; margin-bottom: 6px; display: flex; justify-content: space-between;
+    }
+    .signal-label.rh { color: var(--primary); }
+    .signal-label.ti { color: var(--secondary); }
+    .signal-title { font-weight: 600; font-size: 0.9rem; margin: 0 0 6px; }
+    .signal-text { font-size: 0.82rem; color: var(--text-muted); margin: 0; }
+    .connector-bar {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      margin: 12px 0; font-family: var(--font-mono); font-size: 0.72rem; color: var(--primary);
+    }
+    .connector-bar::before, .connector-bar::after {
+      content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    }
+    .incident-output {
+      background: var(--danger-soft);
+      border: 1px solid rgba(244, 63, 94, 0.45);
+      border-radius: 10px; padding: 14px 16px;
+    }
+    .incident-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      font-family: var(--font-mono); font-size: 0.76rem; color: #FDA4AF; margin-bottom: 6px;
+    }
+    .badge-crit {
+      background: var(--danger); color: #fff; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+      font-size: 0.68rem; letter-spacing: 0.06em;
+    }
+    .incident-meta {
+      display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px;
+      font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted);
+    }
+
+    /* Seções genéricas */
+    section { padding: 76px 0; border-top: 1px solid var(--border); }
+    .section-kicker {
+      font-family: var(--font-mono); font-size: 0.78rem; color: var(--primary);
+      text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 10px; display: block;
+    }
+    h2 {
+      font-family: var(--font-display); font-size: clamp(1.7rem, 3vw, 2.45rem);
+      line-height: 1.15; margin: 0 0 14px; letter-spacing: -0.015em;
+    }
+    .section-desc { color: var(--text-muted); max-width: 66ch; margin: 0 0 36px; font-size: 1.02rem; }
+
+    /* Cards de Problema / Solução */
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 24px; transition: border-color 0.25s ease, transform 0.25s ease;
+    }
+    .card:hover { border-color: var(--border-strong); transform: translateY(-3px); }
+    .card h3 { font-family: var(--font-display); font-size: 1.18rem; margin: 0 0 10px; }
+    .card p { color: var(--text-muted); font-size: 0.94rem; margin: 0; }
+    .card-highlight {
+      border-color: var(--border-strong);
+      background: linear-gradient(180deg, rgba(230, 159, 56, 0.08), var(--bg-card));
+    }
+
+    /* Bloco visual ilustrativo (placeholder estilizado conforme Regra 4.4) */
+    .visual-frame {
+      height: 148px; border-radius: 10px; margin-bottom: 18px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+      border: 1px solid var(--border); position: relative; overflow: hidden;
+      background: radial-gradient(circle at 25% 25%, rgba(230, 159, 56, 0.16), transparent 60%),
+                  linear-gradient(135deg, #0E141F 0%, #172234 100%);
+    }
+    .visual-frame.teal {
+      background: radial-gradient(circle at 75% 25%, rgba(45, 212, 191, 0.16), transparent 60%),
+                  linear-gradient(135deg, #0D171E 0%, #142530 100%);
+    }
+    .visual-frame.crimson {
+      background: radial-gradient(circle at 50% 25%, rgba(244, 63, 94, 0.18), transparent 60%),
+                  linear-gradient(135deg, #171019 0%, #241522 100%);
+    }
+    .visual-caption {
+      font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);
+      letter-spacing: 0.06em; text-transform: uppercase;
+    }
+
+    /* Números reais */
+    .metrics-band { background: var(--bg-elev); }
+    .metric-box {
+      padding: 24px; border: 1px solid var(--border); border-radius: var(--radius);
+      background: rgba(10, 14, 20, 0.55);
+    }
+    .metric-val {
+      font-family: var(--font-display); font-size: clamp(1.9rem, 3.2vw, 2.6rem);
+      font-weight: 800; color: var(--primary); line-height: 1.1; margin-bottom: 6px;
+    }
+    .metric-val.teal { color: var(--secondary); }
+    .metric-label { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
+    .metric-src { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted); }
+
+    /* Planos / Portfólio */
+    .plan-card { display: flex; flex-direction: column; justify-content: space-between; }
+    .plan-cat {
+      font-family: var(--font-mono); font-size: 0.74rem; text-transform: uppercase;
+      color: var(--secondary); letter-spacing: 0.08em; margin-bottom: 8px;
+    }
+    .plan-price {
+      font-family: var(--font-display); font-size: 2rem; font-weight: 800; margin: 14px 0 6px;
+    }
+    .plan-price span { font-family: var(--font-body); font-size: 0.88rem; font-weight: 400; color: var(--text-muted); }
+    .plan-list { list-style: none; padding: 0; margin: 16px 0 24px; display: grid; gap: 8px; }
+    .plan-list li { font-size: 0.9rem; color: var(--text-muted); padding-left: 18px; position: relative; }
+    .plan-list li::before { content: "▸"; position: absolute; left: 0; color: var(--primary); }
+
+    /* Processo */
+    .step-num {
+      font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700;
+      color: var(--primary); background: var(--primary-soft);
+      display: inline-block; padding: 4px 10px; border-radius: 6px; margin-bottom: 12px;
+    }
+
+    /* Seção Etapa 4 / Segurança e Governança */
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; background: var(--bg-card); }
+    th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { background: #0E1520; color: var(--primary); font-family: var(--font-mono); font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .pill-ok { display: inline-block; padding: 2px 8px; border-radius: 4px; background: var(--secondary-soft); color: var(--secondary); font-family: var(--font-mono); font-size: 0.74rem; }
+    .pill-no { display: inline-block; padding: 2px 8px; border-radius: 4px; background: var(--danger-soft); color: #FDA4AF; font-family: var(--font-mono); font-size: 0.74rem; }
+    .pill-warn { display: inline-block; padding: 2px 8px; border-radius: 4px; background: var(--primary-soft); color: var(--primary); font-family: var(--font-mono); font-size: 0.74rem; }
+    .code-box {
+      background: #070A0F; border: 1px solid var(--border); border-left: 3px solid var(--secondary);
+      border-radius: 8px; padding: 14px 16px; font-family: var(--font-mono); font-size: 0.78rem;
+      color: #CBD5E1; overflow-x: auto; white-space: pre; line-height: 1.55; margin-top: 12px;
+    }
+    .code-box.err { border-left-color: var(--danger); color: #FECDD3; }
+
+    /* Contato */
+    .contact-form { display: grid; gap: 14px; }
+    .field label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; }
+    .field input, .field select, .field textarea {
+      width: 100%; padding: 11px 14px; border-radius: 8px;
+      border: 1px solid var(--border); background: #0B1018; color: var(--text);
+      font-family: var(--font-body); font-size: 0.94rem;
+    }
+    .form-feedback {
+      display: none; padding: 12px 14px; border-radius: 8px; font-size: 0.9rem;
+      background: var(--secondary-soft); border: 1px solid rgba(45, 212, 191, 0.4); color: var(--secondary);
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border); padding: 36px 0; font-size: 0.85rem; color: var(--text-muted);
+      background: #070A0F;
+    }
+    .footer-inner { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: center; }
+
+    /* Animações suaves com IntersectionObserver */
+    .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .reveal { opacity: 1; transform: none; transition: none; }
+      .pulse-dot { animation: none; }
+    }
+
+    @media (max-width: 960px) {
+      .hero-grid, .grid-3, .grid-4, .grid-2 { grid-template-columns: 1fr; }
+      .signal-pair { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 780px) {
+      .menu-btn { display: inline-flex; }
+      .nav-links {
+        display: none; position: absolute; top: 100%; left: 0; right: 0;
+        flex-direction: column; align-items: flex-start; gap: 14px;
+        background: #0B1018; padding: 20px 24px; border-bottom: 1px solid var(--border);
+      }
+      .nav-links.open { display: flex; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#topo" class="brand" aria-label="Chaldea — Página inicial">
+        <svg width="32" height="32" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+          <polygon points="18,2 32,10 32,26 18,34 4,26 4,10" stroke="#E69F38" stroke-width="2.2" fill="rgba(230,159,56,0.1)"/>
+          <circle cx="18" cy="18" r="5" stroke="#2DD4BF" stroke-width="2"/>
+          <line x1="18" y1="7" x2="18" y2="13" stroke="#E69F38" stroke-width="2"/>
+          <line x1="18" y1="23" x2="18" y2="29" stroke="#E69F38" stroke-width="2"/>
+          <line x1="8.5" y1="12.5" x2="13.6" y2="15.5" stroke="#2DD4BF" stroke-width="1.8"/>
+          <line x1="22.4" y1="20.5" x2="27.5" y2="23.5" stroke="#2DD4BF" stroke-width="1.8"/>
+        </svg>
+        CHALDEA <span class="brand-tag">INSIDER RISK</span>
+      </a>
+
+      <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="navLinks" aria-label="Abrir menu">
+        ☰ Menu
+      </button>
+
+      <nav class="nav-links" id="navLinks" aria-label="Navegação principal">
+        <a href="#solucao">Solução</a>
+        <a href="#planos">Planos</a>
+        <a href="#processo">Como funciona</a>
+        <a href="#etapa4">Segurança &amp; Etapa 4</a>
+        <a href="#equipe">Equipe</a>
+        <a href="#contato" class="nav-cta">Agendar Demo</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="topo">
+    <!-- 1. HERÓI + ELEMENTO-ASSINATURA INTERATIVO -->
+    <section class="hero" style="border-top:none;">
+      <div class="container hero-grid">
+        <div>
+          <span class="eyebrow"><span class="pulse-dot"></span> Plataforma SaaS · Compliance + Cibersegurança</span>
+          <h1>Quando um relato do RH encontra um log da TI, o <span>vazamento para antes de sair.</span></h1>
+          <p class="hero-lead">
+            A Chaldea integra seu canal seguro de denúncias aos alertas de DLP, SIEM e Firewall já existentes na empresa,
+            correlacionando sinais humanos e pegadas digitais em incidentes críticos auditáveis sob conformidade LGPD.
+          </p>
+          <div class="hero-actions">
+            <a href="#contato" class="btn btn-primary">Solicitar demonstração</a>
+            <a href="#etapa4" class="btn btn-ghost">Ver arquitetura de segurança (Etapa 4)</a>
+          </div>
+        </div>
+
+        <!-- Elemento-Assinatura: Console Interativo de Correlação -->
+        <div class="correlator-shell" aria-label="Simulador interativo de correlação de ameaças internas da Chaldea">
+          <div class="correlator-top">
+            <span>CHALDEA // MOTOR DE CORRELAÇÃO RELACIONAL</span>
+            <span style="color:var(--secondary);">● PostgreSQL Ativo</span>
+          </div>
+          <div class="case-tabs" role="tablist" aria-label="Casos reais registrados no banco">
+            <button class="case-tab active" data-case="0" role="tab" aria-selected="true">Caso #1 · NovaTech (DLP)</button>
+            <button class="case-tab" data-case="1" role="tab" aria-selected="false">Caso #2 · CrediForte (SIEM)</button>
+            <button class="case-tab" data-case="2" role="tab" aria-selected="false">Caso #3 · AgroCerrado (Firewall)</button>
+          </div>
+          <div class="signal-pair">
+            <div class="signal-card">
+              <div class="signal-label rh"><span>SINAL HUMANO (RH)</span><span id="cCanal">portal_web</span></div>
+              <p class="signal-title" id="cProt">Protocolo #1 · Matrícula F001</p>
+              <p class="signal-text" id="cRelato">Colega comentou que vai pedir demissão para ir à concorrência levando fórmulas do laboratório.</p>
+            </div>
+            <div class="signal-card">
+              <div class="signal-label ti"><span>SINAL CIBERNÉTICO (TI)</span><span id="cFonte">DLP</span></div>
+              <p class="signal-title" id="cVol">Volume: 10.240,00 MB</p>
+              <p class="signal-text" id="cLog">Cópia de 10 GB da pasta /formulas_confidenciais para Google Drive pessoal às 22h41.</p>
+            </div>
+          </div>
+          <div class="connector-bar">JOIN chaldea.compoe_humano ∩ chaldea.compoe_ciber</div>
+          <div class="incident-output">
+            <div class="incident-head">
+              <span id="cIncId">INCIDENTE #1 · NovaTech Indústria Farmacêutica S.A.</span>
+              <span class="badge-crit" id="cCrit">CRÍTICA</span>
+            </div>
+            <p class="signal-text" style="color:#FFE4E6;" id="cResumo">
+              Correlação automática confirmada para João Marcos Ferreira (CPF mascarado: ***.222.***-**). Caso despachado para resposta forense.
+            </p>
+            <div class="incident-meta">
+              <span id="cAnalista">Analista: Ana Paula Silveira</span>
+              <span id="cStatus">Status: em andamento</span>
+              <span>Auditoria: append-only ✔</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. O PONTO CEGO QUE RESOLVEMOS -->
+    <section id="solucao">
+      <div class="container">
+        <span class="section-kicker">O problema corporativo</span>
+        <h2>Sinais isolados geram falsos negativos. A correlação gera resposta.</h2>
+        <p class="section-desc">
+          Empresas não precisam substituir seus firewalls ou ferramentas de DLP. A Chaldea atua como o funil inteligente
+          entre pessoas e infraestrutura — eliminando o ponto cego onde acontecem os vazamentos mais caros.
+        </p>
+
+        <div class="grid-3">
+          <article class="card reveal">
+            <!-- IMAGEM: buscar "cybersecurity operations center dark monitor logs" no Unsplash -->
+            <div class="visual-frame teal" role="img" aria-label="Ilustração de alertas técnicos isolados">
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" stroke-width="1.7" aria-hidden="true">
+                <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+              </svg>
+              <span class="visual-caption">Log de TI sem contexto</span>
+            </div>
+            <h3>A TI vê um backup rotineiro</h3>
+            <p>Um alerta isolado de DLP indicando a cópia de 10 GB para a nuvem pode parecer manutenção normal em meio a milhares de eventos diários.</p>
+          </article>
+
+          <article class="card reveal">
+            <!-- IMAGEM: buscar "corporate compliance ethics confidential meeting" no Unsplash -->
+            <div class="visual-frame" role="img" aria-label="Ilustração de denúncia de RH isolada">
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#E69F38" stroke-width="1.7" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              <span class="visual-caption">Relato de RH sem prova</span>
+            </div>
+            <h3>O RH vê um rumor de corredor</h3>
+            <p>Uma denúncia anônima alertando sobre saída iminente para a concorrência costuma ficar parada em triagem por falta de evidência técnica.</p>
+          </article>
+
+          <article class="card card-highlight reveal">
+            <!-- IMAGEM: buscar "digital forensics data security shield dark" no Unsplash -->
+            <div class="visual-frame crimson" role="img" aria-label="Ilustração da correlação Chaldea">
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#F43F5E" stroke-width="1.7" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><circle cx="12" cy="16" r="0.8" fill="#F43F5E"/>
+              </svg>
+              <span class="visual-caption">Correlação Chaldea</span>
+            </div>
+            <h3>A Chaldea aciona o alerta forense</h3>
+            <p>O banco relacional cruza matrícula, protocolo e evento cibernético no mesmo instante, abrindo um incidente crítico com trilha imutável.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. NÚMEROS REAIS DO BANCO -->
+    <section class="metrics-band" aria-label="Indicadores reais da plataforma">
+      <div class="container">
+        <span class="section-kicker">Operação em números reais</span>
+        <h2>Indicadores auditáveis direto da base PostgreSQL</h2>
+        <div class="grid-4">
+          <div class="metric-box reveal">
+            <div class="metric-val">5</div>
+            <div class="metric-label">Empresas protegidas</div>
+            <div class="metric-src">Ativas em GO e DF · empresa_cliente</div>
+          </div>
+          <div class="metric-box reveal">
+            <div class="metric-val teal">12,13 GB</div>
+            <div class="metric-label">Exfiltração rastreada</div>
+            <div class="metric-src">DLP, SIEM e Firewall · log_sistema</div>
+          </div>
+          <div class="metric-box reveal">
+            <div class="metric-val">3</div>
+            <div class="metric-label">Incidentes correlacionados</div>
+            <div class="metric-src">2 críticos + 1 alto · incidente_risco</div>
+          </div>
+          <div class="metric-box reveal">
+            <div class="metric-val teal">0,499s</div>
+            <div class="metric-label">RTO real de recuperação</div>
+            <div class="metric-src">pg_restore -Fc validado · Parte C</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. PORTFÓLIO DE PLANOS -->
+    <section id="planos">
+      <div class="container">
+        <span class="section-kicker">Portfólio B2B</span>
+        <h2>Planos modulares para cada maturidade de compliance</h2>
+        <p class="section-desc">
+          Assinatura mensal em nuvem, sem necessidade de substituir sua infraestrutura atual de segurança.
+        </p>
+
+        <div class="grid-3">
+          <article class="card plan-card reveal">
+            <div>
+              <div class="plan-cat">Compliance</div>
+              <h3>Chaldea Ética</h3>
+              <p>Portal seguro de denúncias anônimas e gestão estruturada de relatos pelo RH.</p>
+              <div class="plan-price">R$ 1.800 <span>/ mês</span></div>
+              <ul class="plan-list">
+                <li>Canais portal_web, canal_etica e rh_interno</li>
+                <li>Vinculação segura de protocolos e envolvidos</li>
+                <li>Mascaramento nativo de CPF e e-mail (LGPD)</li>
+                <li>Acesso por menor privilégio no banco</li>
+              </ul>
+            </div>
+            <a href="#contato" class="btn btn-ghost" style="justify-content:center;">Contratar Ética</a>
+          </article>
+
+          <article class="card plan-card card-highlight reveal">
+            <div>
+              <div class="plan-cat" style="color:var(--primary);">Inteligência · Mais adotado</div>
+              <h3>Chaldea Correlação</h3>
+              <p>Canal de denúncias + integração de logs DLP/SIEM + motor de correlação de risco.</p>
+              <div class="plan-price">R$ 4.900 <span>/ mês</span></div>
+              <ul class="plan-list">
+                <li>Tudo do plano Chaldea Ética</li>
+                <li>Ingestão de alertas DLP, SIEM, Firewall e AD</li>
+                <li>Cruzamento automático humano × cibernético</li>
+                <li>Classificação de criticidade em 4 níveis</li>
+              </ul>
+            </div>
+            <a href="#contato" class="btn btn-primary" style="justify-content:center;">Contratar Correlação</a>
+          </article>
+
+          <article class="card plan-card reveal">
+            <div>
+              <div class="plan-cat">Forense Full</div>
+              <h3>Chaldea Enterprise</h3>
+              <p>Correlação avançada, equipe forense dedicada, auditoria imutável e SLA 24/7.</p>
+              <div class="plan-price">R$ 9.800 <span>/ mês</span></div>
+              <ul class="plan-list">
+                <li>Tudo do plano Chaldea Correlação</li>
+                <li>Analistas forenses dedicados por incidente</li>
+                <li>Trilha de auditoria append-only via trigger</li>
+                <li>Continuidade de negócios com WAL e PITR</li>
+              </ul>
+            </div>
+            <a href="#contato" class="btn btn-ghost" style="justify-content:center;">Falar com Enterprise</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. COMO FUNCIONA -->
+    <section id="processo" style="background:var(--bg-elev);">
+      <div class="container">
+        <span class="section-kicker">Fluxo operacional</span>
+        <h2>Do relato inicial à contenção forense em quatro etapas</h2>
+        <div class="grid-4">
+          <article class="card reveal">
+            <span class="step-num">01 · RECEPÇÃO</span>
+            <h3>Denúncia segura</h3>
+            <p>O relato entra via portal web ou canal de ética usando a conta restrita da aplicação, preservando o sigilo e o protocolo único.</p>
+          </article>
+          <article class="card reveal">
+            <span class="step-num">02 · INGESTÃO</span>
+            <h3>Eventos de TI</h3>
+            <p>Logs de DLP, SIEM, Firewall e Active Directory registram ações anômalas e volume de dados em MB vinculados à matrícula.</p>
+          </article>
+          <article class="card reveal">
+            <span class="step-num">03 · CORRELAÇÃO</span>
+            <h3>Incidente priorizado</h3>
+            <p>O banco relaciona denúncia e evidência digital no mesmo incidente de risco, direcionando imediatamente ao analista forense.</p>
+          </article>
+          <article class="card reveal">
+            <span class="step-num">04 · AUDITORIA</span>
+            <h3>Trilha imutável</h3>
+            <p>Cada mudança de status gera registro automático na auditoria append-only, pronta para comitês de ética e fiscalizações da ANPD.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. SEGURANÇA, LGPD & PUBLICAÇÃO DA ETAPA 4 -->
+    <section id="etapa4">
+      <div class="container">
+        <span class="section-kicker">Governança &amp; Entrega — Etapa 4 (IIG0018)</span>
+        <h2>Segurança aplicada no banco PostgreSQL (schema <code>chaldea</code>)</h2>
+        <p class="section-desc">
+          Transparência técnica total: abaixo estão publicados os controles reais de acesso (menor privilégio),
+          adequação à LGPD, trilha de auditoria append-only e teste de recuperação de desastres executados no PostgreSQL.
+        </p>
+
+        <h3 style="font-family:var(--font-display); margin:0 0 12px;">Matriz de Permissões (Parte A — Roles, GRANT e REVOKE)</h3>
+        <div class="table-wrap reveal">
+          <table>
+            <thead>
+              <tr>
+                <th>Papel (Role)</th>
+                <th>Tipo</th>
+                <th>funcionario (crua)</th>
+                <th>vw_funcionario_publico (LGPD)</th>
+                <th>denuncia / compoe_*</th>
+                <th>log_sistema / incidente_risco</th>
+                <th>auditoria_sistema</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>role_app_portal</strong><br><span style="color:var(--text-muted);font-size:0.78rem;">Aplicação Web</span></td>
+                <td><span class="pill-warn">LOGIN</span></td>
+                <td><span class="pill-no">NEGADO</span></td>
+                <td><span class="pill-ok">SELECT</span></td>
+                <td><span class="pill-ok">INSERT, SELECT*</span></td>
+                <td><span class="pill-no">NEGADO</span></td>
+                <td><span class="pill-no">NEGADO</span></td>
+              </tr>
+              <tr>
+                <td><strong>role_analista_forense</strong><br><span style="color:var(--text-muted);font-size:0.78rem;">ana_forense</span></td>
+                <td><span class="pill-ok">NOLOGIN</span></td>
+                <td><span class="pill-no">NEGADO</span></td>
+                <td><span class="pill-ok">SELECT</span></td>
+                <td><span class="pill-ok">SELECT</span></td>
+                <td><span class="pill-ok">SELECT, UPDATE (inc.)</span></td>
+                <td><span class="pill-warn">INSERT (append-only)</span></td>
+              </tr>
+              <tr>
+                <td><strong>role_gestor_compliance</strong><br><span style="color:var(--text-muted);font-size:0.78rem;">carlos_gestor</span></td>
+                <td><span class="pill-ok">NOLOGIN</span></td>
+                <td><span class="pill-no">NEGADO</span></td>
+                <td><span class="pill-ok">SELECT</span></td>
+                <td><span class="pill-no">NEGADO</span></td>
+                <td><span class="pill-ok">SELECT (incidente)</span></td>
+                <td><span class="pill-ok">SELECT</span></td>
+              </tr>
+              <tr>
+                <td><strong>role_admin_chaldea</strong><br><span style="color:var(--text-muted);font-size:0.78rem;">Sem SUPERUSER</span></td>
+                <td><span class="pill-ok">NOLOGIN</span></td>
+                <td><span class="pill-ok">ALL</span></td>
+                <td><span class="pill-ok">ALL</span></td>
+                <td><span class="pill-ok">ALL</span></td>
+                <td><span class="pill-ok">ALL</span></td>
+                <td><span class="pill-warn">REVOKE UPD/DEL</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid-2">
+          <article class="card reveal">
+            <h3>Provas reais de Menor Privilégio &amp; LGPD</h3>
+            <p>O acesso padrão de <code>PUBLIC</code> foi revogado e <code>ALTER DEFAULT PRIVILEGES</code> protege objetos futuros. A aplicação registra denúncias e lê apenas a view mascarada; qualquer tentativa indevida é bloqueada pelo SGBD:</p>
+            <div class="code-box">-- PERMITIDO (role_app_portal -> vw_funcionario_publico)
+F001 | João Marcos Ferreira | ***.222.***-** | jo***@novatech.com.br
+F002 | Mariana Alves Costa  | ***.333.***-** | ma***@novatech.com.br</div>
+            <div class="code-box err">-- NEGADO (tentativas bloqueadas pelo PostgreSQL)
+ERROR: permission denied for table funcionario
+ERROR: permission denied for table denuncia
+ERROR: permission denied for table auditoria_sistema</div>
+          </article>
+
+          <article class="card reveal">
+            <h3>Auditoria Append-Only &amp; Backup Testado (Partes B e C)</h3>
+            <p>Alterações em <code>incidente_risco</code> disparam o trigger <code>tg_audita_incidente</code>. O backup custom (<code>pg_dump -Fc</code>) foi restaurado em banco limpo com 100% de integridade nas contagens em <strong>0,499 segundos (RTO real)</strong>.</p>
+            <div class="code-box">-- Trilha automática gravada ao atualizar o Incidente #1
+2026-11-25 20:39:52 | ana_forense | incidente_risco | UPDATE incidente
+Detalhe: incidente 1: status aberto -> andamento</div>
+            <p style="margin-top:12px;font-size:0.86rem;">
+              <strong>Estratégia de RPO:</strong> Por lidar com denúncias sigilosas e evidências forenses em tempo real, o RPO aceitável é de poucos segundos; além do <code>pg_dump</code> diário, a produção utiliza backup físico contínuo com WAL e PITR na regra 3-2-1.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. SEGMENTOS, MISSÃO E ÁREA DE ATUAÇÃO -->
+    <section style="background:var(--bg-elev);">
+      <div class="container grid-2">
+        <div class="reveal">
+          <span class="section-kicker">Quem atendemos</span>
+          <h2>Setores críticos no eixo Goiás – Distrito Federal</h2>
+          <p style="color:var(--text-muted);">
+            Sediada em <strong>Cidade Ocidental – GO</strong>, a Chaldea protege empresas em Goiânia, Anápolis, Valparaíso, Cidade Ocidental e Brasília, com arquitetura em nuvem pronta para atendimento nacional.
+          </p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;">
+            <span class="pill-warn">Indústria Farmacêutica</span>
+            <span class="pill-ok">Serviços Financeiros</span>
+            <span class="pill-warn">Agronegócio</span>
+            <span class="pill-ok">Saúde &amp; Engenharia Clínica</span>
+            <span class="pill-warn">Logística Hospitalar</span>
+          </div>
+        </div>
+
+        <div class="card reveal">
+          <span class="section-kicker" style="margin-bottom:6px;">Propósito institucional</span>
+          <h3>Missão, Visão e Valores</h3>
+          <p style="margin-bottom:10px;"><strong style="color:var(--text);">Missão:</strong> Transformar relatos isolados e logs técnicos dispersos em inteligência investigativa acionável, protegendo a propriedade intelectual e a privacidade de dados.</p>
+          <p style="margin-bottom:10px;"><strong style="color:var(--text);">Visão:</strong> Ser referência no Centro-Oeste em detecção de ameaças internas e compliance digital integrados.</p>
+          <p><strong style="color:var(--text);">Valores:</strong> Sigilo inegociável, menor privilégio por padrão, integridade forense auditável e conformidade estrita com a LGPD.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. EQUIPE E CONTATO -->
+    <section id="equipe">
+      <div class="container">
+        <span class="section-kicker">Equipe fundadora · Turma TA — Grupo 2</span>
+        <h2>Engenharia de Segurança Cibernética (UFG)</h2>
+        <div class="grid-4" style="margin-bottom:56px;">
+          <article class="card reveal">
+            <h3>Matheus Brito</h3>
+            <p style="color:var(--primary);font-size:0.84rem;margin-bottom:6px;">Arquitetura de Dados &amp; Segurança (CTO)</p>
+            <p>Modelagem PostgreSQL, políticas de menor privilégio, auditoria e backup/PITR.</p>
+          </article>
+          <article class="card reveal">
+            <h3>Guilherme</h3>
+            <p style="color:var(--primary);font-size:0.84rem;margin-bottom:6px;">Engenharia de Software &amp; Produto</p>
+            <p>Integração de canais de denúncia, regras de correlação e portal seguro.</p>
+          </article>
+          <article class="card reveal">
+            <h3>Khaled</h3>
+            <p style="color:var(--primary);font-size:0.84rem;margin-bottom:6px;">Operações Forenses &amp; Compliance</p>
+            <p>Investigação digital, conformidade LGPD e resposta a incidentes críticos.</p>
+          </article>
+          <article class="card reveal">
+            <h3>Vinícius</h3>
+            <p style="color:var(--primary);font-size:0.84rem;margin-bottom:6px;">Estratégia Comercial B2B</p>
+            <p>Estruturação dos planos SaaS, onboarding corporativo e sucesso do cliente.</p>
+          </article>
+        </div>
+
+        <div id="contato" class="grid-2" style="align-items:start;">
+          <div class="reveal">
+            <span class="section-kicker">Contato comercial</span>
+            <h2>Proteja os dados críticos da sua empresa</h2>
+            <p style="color:var(--text-muted);margin-bottom:20px;">
+              Solicite uma demonstração técnica da plataforma Chaldea com simulação ao vivo de correlação entre denúncias e logs.
+            </p>
+            <p style="font-family:var(--font-mono);font-size:0.86rem;color:var(--text-muted);">
+              E-mail: contato@chaldea.com.br<br>
+              Telefone: (61) 0000-0000<br>
+              Base operacional: Cidade Ocidental – GO · Eixo GO/DF
+            </p>
+          </div>
+
+          <form class="card contact-form reveal" id="contactForm" novalidate>
+            <div class="field">
+              <label for="nome">Seu nome</label>
+              <input id="nome" name="nome" type="text" placeholder="Ex.: Carla Menezes" required>
+            </div>
+            <div class="field">
+              <label for="email">E-mail corporativo</label>
+              <input id="email" name="email" type="email" placeholder="nome@suaempresa.com.br" required>
+            </div>
+            <div class="field">
+              <label for="plano">Plano de interesse</label>
+              <select id="plano" name="plano">
+                <option value="Chaldea Correlação">Chaldea Correlação (R$ 4.900/mês)</option>
+                <option value="Chaldea Enterprise">Chaldea Enterprise (R$ 9.800/mês)</option>
+                <option value="Chaldea Ética">Chaldea Ética (R$ 1.800/mês)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="mensagem">Cenário ou ferramentas atuais (DLP/SIEM)</label>
+              <textarea id="mensagem" name="mensagem" rows="3" placeholder="Conte brevemente sobre sua operação e necessidade de compliance..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="justify-content:center;">Solicitar demonstração técnica</button>
+            <div class="form-feedback" id="formFeedback" role="status" aria-live="polite"></div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-inner">
+      <div>
+        <strong>Chaldea Tecnologia e Inteligência em Compliance Ltda.</strong> · IIG0018 — Banco de Dados (UFG · Câmpus Cidade Ocidental · 2026/2)<br>
+        <span style="font-size:0.78rem;">Declaração de uso de IA: Site estruturado com apoio de IA generativa (Google Gemini) a partir do Plano de Negócio e do banco PostgreSQL da equipe, sob revisão e responsabilidade integral de Matheus, Guilherme, Khaled e Vinícius.</span>
+      </div>
+      <div style="font-family:var(--font-mono);font-size:0.75rem;">
+        Ilustrações: SVG autoral Chaldea · Placeholders fotográficos preparados para Unsplash
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Menu mobile
+    const menuBtn = document.getElementById('menuBtn');
+    const navLinks = document.getElementById('navLinks');
+    menuBtn.addEventListener('click', () => {
+      const open = navLinks.classList.toggle('open');
+      menuBtn.setAttribute('aria-expanded', String(open));
+    });
+    navLinks.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        navLinks.classList.remove('open');
+        menuBtn.setAttribute('aria-expanded', 'false');
+      });
+    });
+
+    // Elemento-assinatura: troca interativa dos 3 casos reais do banco PostgreSQL
+    const cases = [
+      {
+        canal: 'portal_web',
+        prot: 'Protocolo #1 · Matrícula F001',
+        relato: 'Colega comentou que vai pedir demissão para ir à concorrência levando fórmulas do laboratório.',
+        fonte: 'DLP',
+        vol: 'Volume: 10.240,00 MB',
+        log: 'Cópia de 10 GB da pasta /formulas_confidenciais para Google Drive pessoal às 22h41.',
+        incId: 'INCIDENTE #1 · NovaTech Indústria Farmacêutica S.A.',
+        crit: 'CRÍTICA',
+        resumo: 'Correlação confirmada para João Marcos Ferreira (CPF mascarado: ***.222.***-**). Caso despachado para resposta forense.',
+        analista: 'Analista: Ana Paula Silveira',
+        status: 'Status: em andamento'
+      },
+      {
+        canal: 'canal_etica',
+        prot: 'Protocolo #2 · Matrícula F003',
+        relato: 'Suspeita de exportação indevida da base de clientes VIP fora do horário comercial.',
+        fonte: 'SIEM',
+        vol: 'Volume: 1.850,50 MB',
+        log: 'Exportação massiva de 45.000 cadastros de clientes via VPN residencial às 23h55.',
+        incId: 'INCIDENTE #2 · CrediForte Soluções Financeiras Ltda',
+        crit: 'CRÍTICA',
+        resumo: 'Correlação confirmada para Rafael Nogueira Lima (CPF mascarado: ***.444.***-**). Contenção em andamento.',
+        analista: 'Analista: Ana Paula Silveira',
+        status: 'Status: em andamento'
+      },
+      {
+        canal: 'rh_interno',
+        prot: 'Protocolo #3 · Matrícula F005',
+        relato: 'Possível vazamento de planilhas de cotação para fornecedor externo sem autorização.',
+        fonte: 'Firewall',
+        vol: 'Volume: 42,30 MB',
+        log: 'Envio de anexos de cotação para domínio de e-mail pessoal gratuito às 19h30.',
+        incId: 'INCIDENTE #3 · AgroCerrado Logística S.A.',
+        crit: 'ALTA',
+        resumo: 'Correlação confirmada para Thiago Mendes Silva (CPF mascarado: ***.666.***-**). Evidência preservada para auditoria.',
+        analista: 'Analista: Bruno Henrique Dias',
+        status: 'Status: aberto'
+      }
+    ];
+
+    const tabs = document.querySelectorAll('.case-tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+        const c = cases[Number(tab.dataset.case)];
+        document.getElementById('cCanal').textContent = c.canal;
+        document.getElementById('cProt').textContent = c.prot;
+        document.getElementById('cRelato').textContent = c.relato;
+        document.getElementById('cFonte').textContent = c.fonte;
+        document.getElementById('cVol').textContent = c.vol;
+        document.getElementById('cLog').textContent = c.log;
+        document.getElementById('cIncId').textContent = c.incId;
+        document.getElementById('cCrit').textContent = c.crit;
+        document.getElementById('cResumo').textContent = c.resumo;
+        document.getElementById('cAnalista').textContent = c.analista;
+        document.getElementById('cStatus').textContent = c.status;
+      });
+    });
+
+    // Validação simples do formulário de contato (apenas visual)
+    const form = document.getElementById('contactForm');
+    const feedback = document.getElementById('formFeedback');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const nome = form.nome.value.trim();
+      const email = form.email.value.trim();
+      const msg = form.mensagem.value.trim();
+      if (!nome || !email.includes('@') || !msg) {
+        feedback.style.display = 'block';
+        feedback.style.borderColor = 'rgba(244, 63, 94, 0.5)';
+        feedback.style.color = '#FDA4AF';
+        feedback.textContent = 'Preencha nome, e-mail corporativo válido e uma breve descrição do cenário.';
+        return;
+      }
+      feedback.style.display = 'block';
+      feedback.style.borderColor = 'rgba(45, 212, 191, 0.45)';
+      feedback.style.color = '#2DD4BF';
+      feedback.textContent = `Solicitação registrada (demonstração visual), ${nome}. A equipe Chaldea responderia para ${email} sobre o plano ${form.plano.value}.`;
+      form.reset();
+    });
+
+    // Animação suave de entrada ao rolar
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>
